@@ -13,7 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código de la aplicación desde la carpeta hola
 COPY hola/*.py ./
 COPY hola/templates/ ./templates/
-COPY .env .env
 
 # Crear directorio para uploads y base de datos
 RUN mkdir -p uploads && \

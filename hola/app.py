@@ -3,8 +3,11 @@ import sqlite3
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
-load_dotenv()
+# Cargar variables de entorno (solo si el archivo .env existe)
+try:
+    load_dotenv()
+except:
+    pass  # En producción las variables se configuran directamente en el servidor
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'supersecretkey')
