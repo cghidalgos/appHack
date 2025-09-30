@@ -5,7 +5,15 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: OPENAI_API_KEY
+        sync: false  # Esta variable se debe configurar en Render dashboard
+      - key: SECRET_KEY
+        generateValue: true  # Render generará una clave secreta automáticamente
     ports:
       - 5000
     healthCheckPath: /
     autoDeploy: true
+    disk:
+      name: sqlite-data
+      mountPath: /app
+      sizeGB: 1
