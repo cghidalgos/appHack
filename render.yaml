@@ -1,0 +1,11 @@
+services:
+  web:
+    build: ./hola
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+    ports:
+      - 5000
+    healthCheckPath: /
+    autoDeploy: true
