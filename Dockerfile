@@ -7,12 +7,13 @@ RUN useradd --create-home --shell /bin/bash app
 WORKDIR /app
 
 # Copiar e instalar dependencias
-COPY requirements.txt ./
+COPY hola/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código de la aplicación
-COPY . .
-COPY ../.env .env
+# Copiar código de la aplicación desde la carpeta hola
+COPY hola/*.py ./
+COPY hola/templates/ ./templates/
+COPY .env .env
 
 # Crear directorio para uploads y base de datos
 RUN mkdir -p uploads && \
