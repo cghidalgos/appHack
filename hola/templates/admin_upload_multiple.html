@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cargar Múltiples Documentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-pink-900 min-h-screen flex items-center justify-center">
+  <div class="bg-white/10 backdrop-blur-lg rounded-xl shadow-2xl p-10 w-full max-w-3xl text-center">
+    <h2 class="text-3xl font-bold text-white mb-6">Cargar Múltiples Historias Clínicas</h2>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mb-4 text-green-400 font-semibold">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" enctype="multipart/form-data">
+      <div class="mb-6">
+        <input 
+          type="file" 
+          name="files" 
+          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" 
+          multiple 
+          required
+          class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white/20 text-white cursor-pointer"
+        >
+        <p class="text-xs text-gray-300 mt-2">Puedes seleccionar hasta 5 archivos.</p>
+      </div>
+      <button 
+        type="submit" 
+        class="bg-purple-600 hover:bg-purple-800 text-white font-bold py-2 px-6 rounded-lg shadow transition"
+      >
+        Subir y Extraer Información
+      </button>
+    </form>
+
+    {% if resultados %}
+    <div class="mt-10 text-left">
+      <h3 class="text-2xl text-white mb-4 font-semibold">Resultados de la carga:</h3>
+      <div class="space-y-4">
+        {% for r in resultados %}
+        <div class="bg-white/20 rounded-lg p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div class="text-blue-200 text-sm"><strong>📄 Archivo:</strong> {{ r.archivo }}</div>
+            {% if r.nombre %}
+            <div class="text-purple-200 text-sm"><strong>👤 Nombre:</strong> {{ r.nombre }}</div>
+            <div class="text-purple-200 text-sm"><strong>🆔 Cédula:</strong> {{ r.cedula }}</div>
+            {% endif %}
+          </div>
+          <div class="{% if 'Éxito' in r.status %}text-green-400{% else %}text-red-400{% endif %} font-bold">
+            {{ r.status }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  <a href="{{ url_for('admin_dashboard') }}" class="mt-8 inline-block text-gray-300 hover:text-white font-semibold">Volver al dashboard</a>
