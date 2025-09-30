@@ -1,15 +1,50 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
 import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno (solo si el archivo .env existe)
+try:
+    load_dotenv()
+except:
+    pass  # En producción las variables se configuran directamente en el servidor
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
-DATABASE = 'database.db'
-UPLOAD_FOLDER = 'uploads'
+app.secret_key = os.getenv('SECRET_KEY', 'supersecretkey')
+
+# Configuración de base de datos con ruta absoluta
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE = os.path.join(BASE_DIR, 'database.db')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+def init_database():
+    """Inicializa la base de datos si no existe"""
+    if not os.path.exists(DATABASE):
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        c.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT,
+            cedula TEXT UNIQUE
+        )
+        ''')
+        c.execute('''
+        CREATE TABLE IF NOT EXISTS historias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER,
+            contenido TEXT,
+            archivo TEXT,
+            FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+        )
+        ''')
+        conn.commit()
+        conn.close()
+        print(f"Base de datos inicializada en: {DATABASE}")
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -51,13 +86,13 @@ def user_dashboard():
 # Aquí irán las rutas para cargar documentos, extraer info, buscar usuarios, etc.
 # Ruta para cargar documento y extraer información
 from werkzeug.utils import secure_filename
-import openai
+from openai import OpenAI
 from PyPDF2 import PdfReader
 from docx import Document
 from PIL import Image
 
-# Configura tu API Key de OpenAI aquí
-openai.api_key = os.getenv('OPENAI_API_KEY', 'sk-...')  # Cambia por tu key real
+# Configura el cliente de OpenAI usando variable de entorno
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def extract_text_from_file(filepath):
     ext = os.path.splitext(filepath)[1].lower()
@@ -80,11 +115,11 @@ def extract_text_from_file(filepath):
 def extract_info_with_openai(text):
     prompt = f"Extrae el nombre y la cédula de la siguiente historia clínica. Si no hay, responde 'No encontrado'.\n\n{text}"
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message['content']
+        return response.choices[0].message.content
     except Exception as e:
         return f"Error al extraer información: {e}"
 
@@ -169,4 +204,10 @@ def user_search():
     return render_template('user_result.html', usuario=usuario, historias=historias)
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
+    # Inicializar base de datos al arrancar
+    init_database()
+    
+    # Configuración para producción en Render
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.getenv('FLASK_ENV') != 'production'
+    app.run(debug=debug_mode, host="0.0.0.0", port=port)

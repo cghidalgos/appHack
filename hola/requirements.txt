@@ -3,3 +3,5 @@ openai
 python-docx
 pillow
 PyPDF2
+python-dotenv
+pytesseract
