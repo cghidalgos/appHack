@@ -3,6 +3,7 @@ import sqlite3
 import os
 
 app = Flask(__name__)
+
 app.secret_key = 'supersecretkey'
 DATABASE = 'database.db'
 UPLOAD_FOLDER = 'uploads'
@@ -10,6 +11,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+# Cargar variables de entorno desde .env y mostrar la API key
+from dotenv import load_dotenv
+load_dotenv()
+import os
+print("API KEY:", os.getenv('OPENAI_API_KEY'))
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -55,9 +62,12 @@ import openai
 from PyPDF2 import PdfReader
 from docx import Document
 from PIL import Image
+from dotenv import load_dotenv
 
-# Configura tu API Key de OpenAI aquí
-openai.api_key = os.getenv('OPENAI_API_KEY', 'sk-...')  # Cambia por tu key real
+# Cargar variables de entorno desde .env
+load_dotenv()
+print("API KEY:", os.getenv('OPENAI_API_KEY'))
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 def extract_text_from_file(filepath):
     ext = os.path.splitext(filepath)[1].lower()
@@ -78,7 +88,11 @@ def extract_text_from_file(filepath):
     return ""
 
 def extract_info_with_openai(text):
-    prompt = f"Extrae el nombre y la cédula de la siguiente historia clínica. Si no hay, responde 'No encontrado'.\n\n{text}"
+    prompt = (
+        "Extrae toda la información relevante de la siguiente historia clínica en formato JSON, "
+        "incluyendo nombre y cédula del paciente, edad, diagnóstico, antecedentes, tratamientos, fecha, y cualquier otro dato importante. "
+        "Si algún dato no está presente, pon el valor como null.\n\nHistoria clínica:\n\n" + text + "\n\nEjemplo de respuesta:\n{\n  'nombre': 'Juan Perez',\n  'cedula': '123456789',\n  'edad': 45,\n  'diagnostico': 'Hipertensión',\n  'antecedentes': 'Ninguno',\n  'tratamientos': 'Enalapril',\n  'fecha': '2023-09-30',\n  ...otros campos...\n}"
+    )
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -100,20 +114,29 @@ def admin_upload():
             file.save(filepath)
             text = extract_text_from_file(filepath)
             info = extract_info_with_openai(text)
-            # Extraer nombre y cédula del resultado de OpenAI
+            # Intentar parsear JSON de la respuesta de OpenAI
+            import json
             nombre, cedula = None, None
-            import re
-            match = re.search(r"nombre[:\s]*([\w\s]+).*cedula[:\s]*([\w\d]+)", info, re.I|re.S)
-            if match:
-                nombre = match.group(1).strip()
-                cedula = match.group(2).strip()
-            else:
-                # Intentar encontrar por líneas
-                for line in info.splitlines():
-                    if 'nombre' in line.lower():
-                        nombre = line.split(':')[-1].strip()
-                    if 'cedula' in line.lower():
-                        cedula = line.split(':')[-1].strip()
+            datos_extraidos = {}
+            try:
+                # Reemplazar comillas simples por dobles para parsear JSON
+                info_json = info.replace("'", '"')
+                datos_extraidos = json.loads(info_json)
+                nombre = datos_extraidos.get('nombre')
+                cedula = datos_extraidos.get('cedula')
+            except Exception:
+                # Si no es JSON, intentar extraer manualmente
+                import re
+                match = re.search(r"nombre[:\s]*([\w\s]+).*cedula[:\s]*([\w\d]+)", info, re.I|re.S)
+                if match:
+                    nombre = match.group(1).strip()
+                    cedula = match.group(2).strip()
+                else:
+                    for line in info.splitlines():
+                        if 'nombre' in line.lower():
+                            nombre = line.split(':')[-1].strip()
+                        if 'cedula' in line.lower():
+                            cedula = line.split(':')[-1].strip()
             if nombre and cedula:
                 db = get_db()
                 user = db.execute('SELECT * FROM usuarios WHERE cedula = ?', (cedula,)).fetchone()
@@ -121,13 +144,15 @@ def admin_upload():
                     db.execute('INSERT INTO usuarios (nombre, cedula) VALUES (?, ?)', (nombre, cedula))
                     db.commit()
                     user = db.execute('SELECT * FROM usuarios WHERE cedula = ?', (cedula,)).fetchone()
-                db.execute('INSERT INTO historias (usuario_id, contenido, archivo) VALUES (?, ?, ?)', (user['id'], text, filename))
+                # Guardar toda la info extraída en la historia clínica
+                db.execute('INSERT INTO historias (usuario_id, contenido, archivo) VALUES (?, ?, ?)', (user['id'], json.dumps(datos_extraidos, ensure_ascii=False), filename))
                 db.commit()
                 db.close()
                 flash('Documento cargado y datos extraídos correctamente.')
+                return redirect(url_for('admin_upload'))
             else:
-                flash('No se pudo extraer nombre y cédula.')
-            return redirect(url_for('admin_upload'))
+                flash('No se pudo extraer nombre y cédula. Respuesta OpenAI: {}'.format(info))
+                return redirect(url_for('admin_upload'))
     return render_template('admin_upload.html')
 
 # Ruta para buscar usuario (admin)
