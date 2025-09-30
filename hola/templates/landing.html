@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Document Capture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 min-h-screen flex items-center justify-center">
+    <div class="bg-white/10 backdrop-blur-lg rounded-xl shadow-2xl p-10 w-full max-w-lg text-center">
+        <h1 class="text-4xl font-extrabold text-white mb-6 drop-shadow-lg">Intelligent Document Capture</h1>
+        <p class="text-lg text-gray-200 mb-8">Extrae información de historias clínicas de manera inteligente y segura.</p>
+        <div class="flex flex-col gap-6">
+            <a href="{{ url_for('login') }}?role=user" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-lg shadow transition">Ingreso Usuario</a>
+            <a href="{{ url_for('login') }}?role=admin" class="bg-purple-600 hover:bg-purple-800 text-white font-bold py-3 px-6 rounded-lg shadow transition">Ingreso Admin</a>
+        </div>
+    </div>
+</body>
+</html>
