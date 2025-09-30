@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todos los Usuarios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-pink-900 min-h-screen flex items-center justify-center">
+    <div class="bg-white/10 backdrop-blur-lg rounded-xl shadow-2xl p-10 w-full max-w-4xl text-center">
+        <h2 class="text-3xl font-bold text-white mb-6">Usuarios y sus Historias Clínicas</h2>
+        <form method="get" action="/admin/search" class="mb-8 flex flex-col md:flex-row gap-4 justify-center items-center">
+            <input type="text" name="cedula" placeholder="Buscar por cédula" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" name="nombre" placeholder="Buscar por nombre" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <button type="submit" class="bg-purple-600 hover:bg-purple-800 text-white font-bold py-2 px-6 rounded-lg shadow transition">Buscar</button>
+        </form>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-white">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2">Nombre</th>
+                        <th class="px-4 py-2">Cédula</th>
+                        <th class="px-4 py-2">Historias Clínicas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr class="border-b border-gray-700">
+                        <td class="px-4 py-2 font-semibold">{{ usuario['nombre'] }}</td>
+                        <td class="px-4 py-2">{{ usuario['cedula'] }}</td>
+                        <td class="px-4 py-2">
+                            {% if usuario['historias'] %}
+                                <ul>
+                                {% for historia in usuario['historias'] %}
+                                    <li class="mb-4 bg-white/20 rounded-lg p-4 shadow flex flex-col md:flex-row gap-6 items-start">
+                                        <div class="flex-1">
+                                            <div class="mb-2 text-blue-200 text-sm"><strong>Archivo:</strong> {{ historia['archivo'] }}</div>
+                                            <div class="mb-2 text-purple-200 text-xs font-bold">Información extraída:</div>
+                                            {% set info = historia['contenido'] %}
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-left text-xs">
+                                                <div class="bg-blue-900/30 rounded p-2"><span class="font-bold text-blue-300">👤 Nombre:</span> {{ info['nombre'] if info['nombre'] is defined else '' }}</div>
+                                                <div class="bg-blue-900/30 rounded p-2"><span class="font-bold text-blue-300">🆔 Cédula:</span> {{ info['cedula'] if info['cedula'] is defined else '' }}</div>
+                                                <div class="bg-purple-900/30 rounded p-2"><span class="font-bold text-purple-300">🎂 Edad:</span> {{ info['edad'] if info['edad'] is defined else '' }}</div>
+                                                <div class="bg-pink-900/30 rounded p-2"><span class="font-bold text-pink-300">🩺 Diagnóstico:</span> {{ info['diagnostico'] if info['diagnostico'] is defined else '' }}</div>
+                                                <div class="bg-indigo-900/30 rounded p-2"><span class="font-bold text-indigo-300">📜 Antecedentes:</span> {{ info['antecedentes'] if info['antecedentes'] is defined else '' }}</div>
+                                                <div class="bg-green-900/30 rounded p-2"><span class="font-bold text-green-300">💊 Tratamientos:</span> {{ info['tratamientos'] if info['tratamientos'] is defined else '' }}</div>
+                                                <div class="bg-yellow-900/30 rounded p-2"><span class="font-bold text-yellow-300">📅 Fecha:</span> {{ info['fecha'] if info['fecha'] is defined else '' }}</div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span class="text-gray-300">Sin historias clínicas</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <a href="/admin" class="mt-8 inline-block text-gray-300 hover:text-white">Volver</a>
+    </div>
+</body>
+</html>

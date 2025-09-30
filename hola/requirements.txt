@@ -4,3 +4,4 @@ python-docx
 pillow
 PyPDF2
 dotenv
+pymongo
